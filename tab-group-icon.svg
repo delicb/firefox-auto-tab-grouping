@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#4285f4" stroke="#1a73e8" stroke-width="2"/>
+  
+  <!-- Tab group representation -->
+  <!-- Group 1 - Blue tabs -->
+  <g id="group1">
+    <rect x="20" y="35" width="24" height="18" rx="3" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+    <rect x="46" y="35" width="24" height="18" rx="3" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+    <!-- Group indicator line -->
+    <rect x="18" y="32" width="54" height="3" rx="1.5" fill="#1a73e8"/>
+  </g>
+  
+  <!-- Group 2 - Green tabs -->
+  <g id="group2">
+    <rect x="20" y="60" width="24" height="18" rx="3" fill="#ffffff" stroke="#34a853" stroke-width="1.5"/>
+    <rect x="46" y="60" width="24" height="18" rx="3" fill="#ffffff" stroke="#34a853" stroke-width="1.5"/>
+    <rect x="72" y="60" width="24" height="18" rx="3" fill="#ffffff" stroke="#34a853" stroke-width="1.5"/>
+    <!-- Group indicator line -->
+    <rect x="18" y="57" width="80" height="3" rx="1.5" fill="#34a853"/>
+  </g>
+  
+  <!-- Group 3 - Orange tabs -->
+  <g id="group3">
+    <rect x="20" y="85" width="24" height="18" rx="3" fill="#ffffff" stroke="#ff9800" stroke-width="1.5"/>
+    <rect x="46" y="85" width="24" height="18" rx="3" fill="#ffffff" stroke="#ff9800" stroke-width="1.5"/>
+    <!-- Group indicator line -->
+    <rect x="18" y="82" width="54" height="3" rx="1.5" fill="#ff9800"/>
+  </g>
+  
+  <!-- Organizing arrows/connection symbol -->
+  <g id="organize-symbol" opacity="0.8">
+    <path d="M85 45 L95 50 L85 55" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M85 70 L95 75 L85 80" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="105" cy="62" r="8" fill="#ffffff" opacity="0.9"/>
+    <path d="M101 62 L105 58 L109 62 L105 66 Z" fill="#4285f4"/>
+  </g>
+</svg>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+    }
+    
+    h1 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    h2 {
+      margin: 16px 0 8px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: #444;
+    }
+    
+    .toggle-section {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-indicator.enabled {
+      background-color: #4CAF50;
+    }
+    
+    .status-indicator.disabled {
+      background-color: #f44336;
+    }
+    
+    .add-config {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    
+    .color-select {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    
+    .color-option {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    
+    .color-option.selected {
+      border-color: #333;
+    }
+    
+    .color-blue { background-color: #4285f4; }
+    .color-red { background-color: #ea4335; }
+    .color-yellow { background-color: #fbbc05; }
+    .color-green { background-color: #34a853; }
+    .color-pink { background-color: #ff69b4; }
+    .color-purple { background-color: #9c27b0; }
+    .color-cyan { background-color: #00bcd4; }
+    .color-orange { background-color: #ff9800; }
+    
+    button {
+      background: #0078d4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      margin: 4px 0;
+    }
+    
+    button:hover {
+      background: #106ebe;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .secondary {
+      background: #6c757d;
+    }
+    
+    .secondary:hover {
+      background: #5a6268;
+    }
+    
+    .add-btn {
+      background: #28a745;
+      width: 100%;
+    }
+    
+    .add-btn:hover {
+      background: #218838;
+    }
+    
+    .configs-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+    }
+    
+    .config-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .config-item:last-child {
+      border-bottom: none;
+    }
+    
+    .config-info {
+      flex-grow: 1;
+    }
+    
+    .config-pattern {
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .config-group {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .config-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    
+    .remove-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .remove-btn:hover {
+      background: #c82333;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 13px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .controls button {
+      flex: 1;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Auto Tab Grouper</h1>
+  
+  <div class="toggle-section">
+    <div class="status">
+      <span>
+        <span id="statusIndicator" class="status-indicator"></span>
+        <span id="statusText">Loading...</span>
+      </span>
+    </div>
+    <button id="toggleBtn">Toggle</button>
+  </div>
+  
+  <h2>Groups</h2>
+  <div class="add-config">
+    <div class="form-group">
+      <label for="groupName">Group Name:</label>
+      <input type="text" id="groupName" placeholder="My Group">
+    </div>
+    
+    <div class="form-group">
+      <label>Color:</label>
+      <div class="color-select">
+        <div class="color-option color-blue" data-color="blue"></div>
+        <div class="color-option color-red" data-color="red"></div>
+        <div class="color-option color-yellow" data-color="yellow"></div>
+        <div class="color-option color-green selected" data-color="green"></div>
+        <div class="color-option color-pink" data-color="pink"></div>
+        <div class="color-option color-purple" data-color="purple"></div>
+        <div class="color-option color-cyan" data-color="cyan"></div>
+        <div class="color-option color-orange" data-color="orange"></div>
+      </div>
+    </div>
+    
+    <button id="addGroupBtn" class="add-btn">Add Group</button>
+  </div>
+  
+  <div id="groupsList" class="configs-list">
+    <div class="empty-state">No groups defined yet</div>
+  </div>
+
+  <h2>Pattern Rules</h2>
+  <div class="add-config">
+    <div class="form-group">
+      <label for="pattern">URL Pattern (e.g., github.com or github.com/organization):</label>
+      <input type="text" id="pattern" placeholder="example.com or example.com/path">
+    </div>
+    
+    <div class="form-group">
+      <label for="groupSelect">Assign to Group:</label>
+      <select id="groupSelect">
+        <option value="">Select a group...</option>
+      </select>
+    </div>
+    
+    <button id="addRuleBtn" class="add-btn">Add Rule</button>
+  </div>
+  
+  <div id="rulesList" class="configs-list">
+    <div class="empty-state">No rules defined yet</div>
+  </div>
+  
+  <div class="controls">
+    <button id="regroupBtn" class="secondary">Regroup All</button>
+    <button id="ungroupBtn" class="secondary">Ungroup All</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
