@@ -23,6 +23,85 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentGroups = [];
   let currentRules = [];
 
+  // Notification system
+  function showNotification(message, type = 'error', duration = 4000) {
+    const container = document.getElementById('notifications');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    container.appendChild(notification);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+      notification.classList.add('fade-out');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, duration);
+  }
+
+  // Confirmation modal system
+  function showConfirmation(title, message) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      
+      const titleEl = document.createElement('h3');
+      titleEl.textContent = title;
+      
+      const messageEl = document.createElement('p');
+      messageEl.textContent = message;
+      
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'modal-buttons';
+      
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'modal-btn secondary';
+      cancelBtn.textContent = 'Cancel';
+      
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'modal-btn primary';
+      confirmBtn.textContent = 'Remove';
+      
+      buttonsDiv.appendChild(cancelBtn);
+      buttonsDiv.appendChild(confirmBtn);
+      
+      modal.appendChild(titleEl);
+      modal.appendChild(messageEl);
+      modal.appendChild(buttonsDiv);
+      overlay.appendChild(modal);
+      
+      document.body.appendChild(overlay);
+      
+      const cleanup = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
+      
+      confirmBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(true);
+      });
+      
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve(false);
+        }
+      });
+    });
+  }
+
   // Color selection logic
   colorOptions.forEach(option => {
     option.addEventListener('click', () => {
@@ -37,13 +116,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const groupName = groupNameInput.value.trim();
     
     if (!groupName) {
-      alert('Please enter a group name');
+      showNotification('Please enter a group name', 'warning');
       return;
     }
     
     // Check for duplicate group names
     if (currentGroups.some(group => group.name === groupName)) {
-      alert('A group with this name already exists');
+      showNotification('A group with this name already exists', 'warning');
       return;
     }
     
@@ -68,6 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await updateStatus();
       
       addGroupBtn.textContent = 'Added!';
+      showNotification('Group added successfully', 'success', 2000);
       setTimeout(() => {
         addGroupBtn.textContent = 'Add Group';
         addGroupBtn.disabled = false;
@@ -76,6 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Error adding group:', error);
       addGroupBtn.textContent = 'Error';
+      showNotification('Failed to add group', 'error');
       setTimeout(() => {
         addGroupBtn.textContent = 'Add Group';
         addGroupBtn.disabled = false;
@@ -89,19 +170,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const groupId = groupSelect.value;
     
     if (!pattern || !groupId) {
-      alert('Please enter a URL pattern and select a group');
+      showNotification('Please enter a URL pattern and select a group', 'warning');
       return;
     }
     
     // Validate pattern format
     if (!isValidPattern(pattern)) {
-      alert('Please enter a valid URL pattern (e.g., example.com or example.com/path)');
+      showNotification('Please enter a valid URL pattern (e.g., example.com or example.com/path)', 'warning');
       return;
     }
     
     // Check for duplicate patterns
     if (currentRules.some(rule => rule.pattern === pattern)) {
-      alert('A rule for this pattern already exists');
+      showNotification('A rule for this pattern already exists', 'warning');
       return;
     }
     
@@ -123,6 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await updateStatus();
       
       addRuleBtn.textContent = 'Added!';
+      showNotification('Rule added successfully', 'success', 2000);
       setTimeout(() => {
         addRuleBtn.textContent = 'Add Rule';
         addRuleBtn.disabled = false;
@@ -131,6 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Error adding rule:', error);
       addRuleBtn.textContent = 'Error';
+      showNotification('Failed to add rule', 'error');
       setTimeout(() => {
         addRuleBtn.textContent = 'Add Rule';
         addRuleBtn.disabled = false;
@@ -271,15 +354,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           confirmMessage += `\n\nThis will also remove ${dependentRules.length} pattern rule(s) that use this group.`;
         }
         
-        if (confirm(confirmMessage)) {
+        const confirmed = await showConfirmation('Confirm Removal', confirmMessage);
+        if (confirmed) {
           try {
             await sendMessage({
               action: 'removeGroup',
               groupId: groupId
             });
             await updateStatus();
+            showNotification('Group removed successfully', 'success', 2000);
           } catch (error) {
             console.error('Error removing group:', error);
+            showNotification('Failed to remove group', 'error');
           }
         }
       });
@@ -310,15 +396,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', async (e) => {
         const pattern = e.target.dataset.pattern;
         
-        if (confirm(`Remove rule for pattern "${pattern}"?`)) {
+        const confirmed = await showConfirmation('Confirm Removal', `Remove rule for pattern "${pattern}"?`);
+        if (confirmed) {
           try {
             await sendMessage({
               action: 'removeRule',
               pattern: pattern
             });
             await updateStatus();
+            showNotification('Rule removed successfully', 'success', 2000);
           } catch (error) {
             console.error('Error removing rule:', error);
+            showNotification('Failed to remove rule', 'error');
           }
         }
       });

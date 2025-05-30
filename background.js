@@ -5,7 +5,6 @@ let groupDefinitions = new Map(); // groupId -> {name, color}
 let patternRules = new Map(); // pattern -> groupId
 let activeGroups = new Map(); // groupId -> tabGroupId
 let isEnabled = true;
-let keepAliveInterval = null;
 let initialized = false;
 
 // TOP-LEVEL EVENT LISTENERS (Required by Firefox)
@@ -471,28 +470,7 @@ function getGroupConfigs() {
   }));
 }
 
-function startKeepAlive() {
-  if (keepAliveInterval) {
-    clearInterval(keepAliveInterval);
-  }
 
-  // Keep background script alive with more frequent pings
-  keepAliveInterval = setInterval(() => {
-    // Multiple activities to prevent termination
-    browser.storage.local.get('keepAlive').catch(() => {});
-    browser.storage.local.set({ lastPing: Date.now() }).catch(() => {});
-  }, 15000); // Every 15 seconds
-
-  console.log('Keep-alive mechanism started (15s interval)');
-}
-
-function stopKeepAlive() {
-  if (keepAliveInterval) {
-    clearInterval(keepAliveInterval);
-    keepAliveInterval = null;
-    console.log('Keep-alive mechanism stopped');
-  }
-}
 
 // INITIALIZATION
 
@@ -505,9 +483,6 @@ async function initializeExtension() {
     
     // Scan for existing groups that match our configurations
     await scanExistingGroups();
-    
-    // Start keep-alive mechanism
-    startKeepAlive();
     
     // Initial grouping of existing tabs
     await groupExistingTabs();

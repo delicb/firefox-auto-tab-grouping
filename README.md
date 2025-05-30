@@ -12,6 +12,8 @@ A Firefox extension that automatically organizes tabs into groups based on URL p
 - **Smart Management**: Automatically creates groups when needed and removes empty groups
 - **Enable/Disable Toggle**: Easily turn auto-grouping on or off
 - **Bulk Operations**: Regroup all tabs or ungroup all tabs with one click
+- **In-Popup Notifications**: User-friendly notifications for success, warnings, and errors (no blocking alerts)
+- **Confirmation Dialogs**: Safe removal with custom confirmation modals
 
 ## Installation
 
@@ -35,18 +37,21 @@ To install this extension permanently:
 1. **Install the Extension**: Follow the installation steps below
 2. **Open Settings**: Click on the extension icon in the toolbar to open the settings popup
 3. **Configure Groups**: 
-   - Enter a hostname (e.g., `github.com`, `google.com`)
-   - Choose a custom group name (e.g., "Development", "Search")
-   - Select a color from the 8 available options
-   - Click "Add Configuration"
-4. **Automatic Grouping**: When you visit a configured hostname:
+   - In the "Groups" section, enter a group name (e.g., "Development", "Social Media")
+   - Choose a color from the 8 available options
+   - Click "Add Group"
+4. **Configure Rules**:
+   - In the "Pattern Rules" section, enter a URL pattern (e.g., `github.com`, `facebook.com/groups`)
+   - Select which group to assign tabs matching this pattern
+   - Click "Add Rule"
+5. **Automatic Grouping**: When you visit a configured pattern:
    - The tab will automatically be moved to the corresponding group
-   - If the group doesn't exist, it will be created with your chosen name and color
-   - Tabs from unconfigured domains will be ungrouped
-5. **Manage Groups**: Use the control buttons to:
-   - **Regroup All**: Apply current configurations to all open tabs
-   - **Ungroup All**: Remove all tabs from groups
-   - **Toggle**: Enable or disable automatic grouping
+   - If the group doesn't exist in the browser, it will be created with your chosen name and color
+   - Tabs from unconfigured patterns will be ungrouped
+6. **Manage Configuration**: 
+   - Remove groups or rules using the "Remove" buttons
+   - Use control buttons to regroup all tabs, ungroup all tabs, or toggle auto-grouping
+7. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
 
 ### Available Colors
 
