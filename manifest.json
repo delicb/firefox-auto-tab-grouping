@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Auto Tab Grouper",
-  "version": "1.2",
-  "description": "Automatically groups tabs by hostname using Firefox's tabGroups API",
+  "name": "Auto Tab Grouping",
+  "version": "1.0",
+  "description": "Automatically groups tabs by defined rules.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "auto-tab-grouper@delic.dev"
+      "id": "auto-tab-grouping@delic.dev"
     }
   },
   "icons": {
