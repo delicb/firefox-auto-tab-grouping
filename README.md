@@ -6,6 +6,7 @@ A Firefox extension that automatically organizes tabs into groups based on URL p
 
 - **Automatic Tab Grouping**: Automatically groups tabs by URL patterns (hostname or hostname/path)
 - **Flexible Pattern Matching**: Support for both hostname-only (e.g., `github.com`) and path-based patterns (e.g., `github.com/organization`)
+- **Pinned Tabs Control**: Option to include or ignore pinned tabs in grouping (default: ignore pinned tabs)
 - **Customizable Group Names**: Configure custom names for each URL pattern group
 - **Color-Coded Groups**: Choose from 8 different colors for visual organization
 - **Real-time Organization**: Tabs are grouped instantly when navigating to configured patterns
@@ -36,22 +37,26 @@ To install this extension permanently:
 
 1. **Install the Extension**: Follow the installation steps below
 2. **Open Settings**: Click on the extension icon in the toolbar to open the settings popup
-3. **Configure Groups**: 
+3. **Configure Settings**:
+   - **Auto-grouping toggle**: Enable or disable automatic tab grouping
+   - **Pinned tabs toggle**: Choose whether to include pinned tabs in grouping (default: ignore pinned tabs)
+4. **Configure Groups**: 
    - In the "Groups" section, enter a group name (e.g., "Development", "Social Media")
    - Choose a color from the 8 available options
    - Click "Add Group"
-4. **Configure Rules**:
+5. **Configure Rules**:
    - In the "Pattern Rules" section, enter a URL pattern (e.g., `github.com`, `facebook.com/groups`)
    - Select which group to assign tabs matching this pattern
    - Click "Add Rule"
-5. **Automatic Grouping**: When you visit a configured pattern:
+6. **Automatic Grouping**: When you visit a configured pattern:
    - The tab will automatically be moved to the corresponding group
    - If the group doesn't exist in the browser, it will be created with your chosen name and color
    - Tabs from unconfigured patterns will be ungrouped
-6. **Manage Configuration**: 
+   - Pinned tabs are ignored by default (can be changed in settings)
+7. **Manage Configuration**: 
    - Remove groups or rules using the "Remove" buttons
    - Use control buttons to regroup all tabs, ungroup all tabs, or toggle auto-grouping
-7. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
+8. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
 
 ### Available Colors
 

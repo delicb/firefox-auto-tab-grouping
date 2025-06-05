@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const regroupBtn = document.getElementById('regroupBtn');
   const ungroupBtn = document.getElementById('ungroupBtn');
   
+  // Pinned tabs toggle elements
+  const pinnedTabsIndicator = document.getElementById('pinnedTabsIndicator');
+  const pinnedTabsText = document.getElementById('pinnedTabsText');
+  const pinnedTabsToggleBtn = document.getElementById('pinnedTabsToggleBtn');
+  
   // Group management elements
   const groupNameInput = document.getElementById('groupName');
   const addGroupBtn = document.getElementById('addGroupBtn');
@@ -236,6 +241,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleBtn.disabled = false;
   });
 
+  // Pinned tabs toggle functionality
+  pinnedTabsToggleBtn.addEventListener('click', async () => {
+    pinnedTabsToggleBtn.disabled = true;
+    try {
+      const response = await sendMessage({ action: 'toggleIgnorePinnedTabs' });
+      await updateStatus();
+      showNotification(
+        response.ignorePinnedTabs ? 'Now ignoring pinned tabs' : 'Now grouping pinned tabs',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error toggling pinned tabs setting:', error);
+      showNotification('Failed to update pinned tabs setting', 'error');
+    }
+    pinnedTabsToggleBtn.disabled = false;
+  });
+
   // Regroup all tabs
   regroupBtn.addEventListener('click', async () => {
     regroupBtn.disabled = true;
@@ -284,12 +306,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const response = await sendMessage({ action: 'getStatus' });
       const isEnabled = response.enabled;
+      const ignorePinnedTabs = response.ignorePinnedTabs;
       currentGroups = response.groups || [];
       currentRules = response.rules || [];
       
       statusIndicator.className = `status-indicator ${isEnabled ? 'enabled' : 'disabled'}`;
       statusText.textContent = isEnabled ? 'Auto-grouping enabled' : 'Auto-grouping disabled';
       toggleBtn.textContent = isEnabled ? 'Disable' : 'Enable';
+      
+      // Update pinned tabs status
+      pinnedTabsIndicator.className = `status-indicator ${ignorePinnedTabs ? 'enabled' : 'disabled'}`;
+      pinnedTabsText.textContent = ignorePinnedTabs ? 'Ignoring pinned tabs' : 'Grouping pinned tabs';
+      pinnedTabsToggleBtn.textContent = ignorePinnedTabs ? 'Include Pinned' : 'Ignore Pinned';
       
       updateGroupSelect();
       renderGroupsList();

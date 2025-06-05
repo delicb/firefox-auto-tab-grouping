@@ -5,6 +5,7 @@ let groupDefinitions = new Map(); // groupId -> {name, color}
 let patternRules = new Map(); // pattern -> groupId
 let activeGroups = new Map(); // groupId -> tabGroupId
 let isEnabled = true;
+let ignorePinnedTabs = true; // Default: don't group pinned tabs
 let initialized = false;
 
 // TOP-LEVEL EVENT LISTENERS (Required by Firefox)
@@ -105,7 +106,7 @@ function matchesPattern(url, pattern) {
 
 async function loadConfig() {
   try {
-    const result = await browser.storage.local.get(['groupDefinitions', 'patternRules', 'isEnabled']);
+    const result = await browser.storage.local.get(['groupDefinitions', 'patternRules', 'isEnabled', 'ignorePinnedTabs']);
     
     if (result.groupDefinitions) {
       groupDefinitions = new Map(Object.entries(result.groupDefinitions));
@@ -119,10 +120,15 @@ async function loadConfig() {
       isEnabled = result.isEnabled;
     }
     
+    if (result.ignorePinnedTabs !== undefined) {
+      ignorePinnedTabs = result.ignorePinnedTabs;
+    }
+    
     console.log('Configuration loaded:', { 
       groupCount: groupDefinitions.size, 
       ruleCount: patternRules.size, 
-      isEnabled 
+      isEnabled,
+      ignorePinnedTabs
     });
   } catch (error) {
     console.error('Error loading config:', error);
@@ -137,7 +143,8 @@ async function saveConfig() {
     await browser.storage.local.set({
       groupDefinitions: groupDefinitionsObj,
       patternRules: patternRulesObj,
-      isEnabled: isEnabled
+      isEnabled: isEnabled,
+      ignorePinnedTabs: ignorePinnedTabs
     });
     console.log('Configuration saved');
   } catch (error) {
@@ -184,8 +191,16 @@ async function scanExistingGroups() {
   }
 }
 
+// CORE FUNCTIONALITY
+
 async function handleTabChange(tab) {
   if (!tab.url || tab.url.startsWith('about:') || tab.url.startsWith('moz-extension:')) {
+    return;
+  }
+
+  // Skip pinned tabs if the option is enabled
+  if (ignorePinnedTabs && tab.pinned) {
+    console.log('Skipping pinned tab:', tab.url);
     return;
   }
 
@@ -307,6 +322,16 @@ async function toggleEnabled() {
     await groupExistingTabs();
   }
   return isEnabled;
+}
+
+async function toggleIgnorePinnedTabs() {
+  ignorePinnedTabs = !ignorePinnedTabs;
+  await saveConfig();
+  
+  if (isEnabled) {
+    await groupExistingTabs();
+  }
+  return ignorePinnedTabs;
 }
 
 async function ungroupAllTabs() {
@@ -518,6 +543,15 @@ function handleMessage(message, sender, sendResponse) {
       });
       return true; // Keep message channel open for async response
       
+    case 'toggleIgnorePinnedTabs':
+      toggleIgnorePinnedTabs().then(ignorePinnedTabs => {
+        sendResponse({ ignorePinnedTabs });
+      }).catch(error => {
+        console.error('Error toggling ignore pinned tabs:', error);
+        sendResponse({ error: error.message });
+      });
+      return true; // Keep message channel open for async response
+      
     case 'ungroup':
       ungroupAllTabs().then(() => {
         sendResponse({ success: true });
@@ -540,6 +574,7 @@ function handleMessage(message, sender, sendResponse) {
       try {
         sendResponse({ 
           enabled: isEnabled,
+          ignorePinnedTabs: ignorePinnedTabs,
           configs: getGroupConfigs(),
           groups: getGroupDefinitions(),
           rules: getPatternRules(),
