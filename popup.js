@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     groupsList.innerHTML = currentGroups.map(group => `
-      <div class="config-item">
+      <div class="config-item" data-group-id="${escapeHtml(group.groupId)}">
         <div class="config-info">
           <div class="config-pattern">${escapeHtml(group.name)}</div>
           <div class="config-group">
@@ -394,9 +394,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escapeHtml(group.color)} color
           </div>
         </div>
-        <button class="remove-btn" data-group-id="${escapeHtml(group.groupId)}">Remove</button>
+        <div class="item-actions">
+          <button class="edit-btn" data-group-id="${escapeHtml(group.groupId)}">Edit</button>
+          <button class="remove-btn" data-group-id="${escapeHtml(group.groupId)}">Remove</button>
+        </div>
       </div>
     `).join('');
+    
+    // Add event listeners for edit buttons
+    groupsList.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const groupId = e.target.dataset.groupId;
+        showGroupEditForm(groupId);
+      });
+    });
     
     // Add event listeners for remove buttons
     groupsList.querySelectorAll('.remove-btn').forEach(btn => {
@@ -437,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     rulesList.innerHTML = currentRules.map(rule => `
-      <div class="config-item">
+      <div class="config-item" data-pattern="${escapeHtml(rule.pattern)}">
         <div class="config-info">
           <div class="config-pattern">
             ${escapeHtml(rule.pattern)}
@@ -448,9 +459,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escapeHtml(rule.groupName)}
           </div>
         </div>
-        <button class="remove-btn" data-pattern="${escapeHtml(rule.pattern)}">Remove</button>
+        <div class="item-actions">
+          <button class="edit-btn" data-pattern="${escapeHtml(rule.pattern)}">Edit</button>
+          <button class="remove-btn" data-pattern="${escapeHtml(rule.pattern)}">Remove</button>
+        </div>
       </div>
     `).join('');
+    
+    // Add event listeners for edit buttons
+    rulesList.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const pattern = e.target.dataset.pattern;
+        showRuleEditForm(pattern);
+      });
+    });
     
     // Add event listeners for remove buttons
     rulesList.querySelectorAll('.remove-btn').forEach(btn => {
@@ -472,6 +494,216 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       });
+    });
+  }
+
+  function showGroupEditForm(groupId) {
+    const group = currentGroups.find(g => g.groupId === groupId);
+    if (!group) return;
+    
+    const groupItem = groupsList.querySelector(`[data-group-id="${groupId}"]`);
+    if (!groupItem) return;
+    
+    // Hide existing edit forms
+    hideAllEditForms();
+    
+    // Create edit form
+    const editForm = document.createElement('div');
+    editForm.className = 'edit-form';
+    editForm.innerHTML = `
+      <div class="form-row">
+        <input type="text" class="edit-group-name" value="${escapeHtml(group.name)}" placeholder="Group name">
+      </div>
+      <div class="form-row">
+        <div class="color-select-mini">
+          ${['blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'].map(color => `
+            <div class="color-option-mini color-${color} ${group.color === color ? 'selected' : ''}" data-color="${color}"></div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="edit-form-actions">
+        <button class="cancel-btn">Cancel</button>
+        <button class="save-btn">Save</button>
+      </div>
+    `;
+    
+    groupItem.appendChild(editForm);
+    
+    // Color selection logic for edit form
+    let editSelectedColor = group.color;
+    const colorOptions = editForm.querySelectorAll('.color-option-mini');
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        colorOptions.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        editSelectedColor = option.dataset.color;
+      });
+    });
+    
+    // Cancel button
+    editForm.querySelector('.cancel-btn').addEventListener('click', () => {
+      hideAllEditForms();
+    });
+    
+    // Save button
+    editForm.querySelector('.save-btn').addEventListener('click', async () => {
+      const nameInput = editForm.querySelector('.edit-group-name');
+      const newName = nameInput.value.trim();
+      
+      if (!newName) {
+        showNotification('Please enter a group name', 'warning');
+        return;
+      }
+      
+      // Check for duplicate group names (excluding current group)
+      if (currentGroups.some(g => g.name === newName && g.groupId !== groupId)) {
+        showNotification('A group with this name already exists', 'warning');
+        return;
+      }
+      
+      const saveBtn = editForm.querySelector('.save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        await sendMessage({
+          action: 'updateGroup',
+          groupId: groupId,
+          name: newName,
+          color: editSelectedColor
+        });
+        
+        hideAllEditForms();
+        await updateStatus();
+        showNotification('Group updated successfully', 'success', 2000);
+      } catch (error) {
+        console.error('Error updating group:', error);
+        showNotification('Failed to update group', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+    
+    // Focus on name input
+    editForm.querySelector('.edit-group-name').focus();
+  }
+
+  function showRuleEditForm(pattern) {
+    const rule = currentRules.find(r => r.pattern === pattern);
+    if (!rule) return;
+    
+    const ruleItem = rulesList.querySelector(`[data-pattern="${pattern}"]`);
+    if (!ruleItem) return;
+    
+    // Hide existing edit forms
+    hideAllEditForms();
+    
+    // Create edit form
+    const editForm = document.createElement('div');
+    editForm.className = 'edit-form';
+    editForm.innerHTML = `
+      <div class="form-row">
+        <select class="edit-pattern-type">
+          <option value="simple" ${rule.type === 'simple' ? 'selected' : ''}>Simple</option>
+          <option value="regex" ${rule.type === 'regex' ? 'selected' : ''}>Regex</option>
+        </select>
+        <input type="text" class="edit-pattern" value="${escapeHtml(rule.pattern)}" placeholder="Pattern">
+      </div>
+      <div class="form-row">
+        <select class="edit-group-select">
+          ${currentGroups.map(group => `
+            <option value="${escapeHtml(group.groupId)}" ${group.groupId === rule.groupId ? 'selected' : ''}>
+              ${escapeHtml(group.name)}
+            </option>
+          `).join('')}
+        </select>
+      </div>
+      <div class="edit-form-actions">
+        <button class="cancel-btn">Cancel</button>
+        <button class="save-btn">Save</button>
+      </div>
+    `;
+    
+    ruleItem.appendChild(editForm);
+    
+    // Pattern type change handler
+    const patternTypeSelect = editForm.querySelector('.edit-pattern-type');
+    const patternInput = editForm.querySelector('.edit-pattern');
+    
+    const updatePatternPlaceholder = () => {
+      if (patternTypeSelect.value === 'regex') {
+        patternInput.placeholder = '.*\\.github\\.com.*|.*stackoverflow.*';
+      } else {
+        patternInput.placeholder = 'example.com or example.com/path';
+      }
+    };
+    
+    patternTypeSelect.addEventListener('change', updatePatternPlaceholder);
+    updatePatternPlaceholder();
+    
+    // Cancel button
+    editForm.querySelector('.cancel-btn').addEventListener('click', () => {
+      hideAllEditForms();
+    });
+    
+    // Save button
+    editForm.querySelector('.save-btn').addEventListener('click', async () => {
+      const newPattern = patternInput.value.trim();
+      const newType = patternTypeSelect.value;
+      const newGroupId = editForm.querySelector('.edit-group-select').value;
+      
+      if (!newPattern || !newGroupId) {
+        showNotification('Please enter a pattern and select a group', 'warning');
+        return;
+      }
+      
+      // Validate pattern format
+      if (!isValidPattern(newPattern, newType)) {
+        if (newType === 'regex') {
+          showNotification('Please enter a valid regular expression', 'warning');
+        } else {
+          showNotification('Please enter a valid URL pattern', 'warning');
+        }
+        return;
+      }
+      
+      // Check for duplicate patterns (excluding current rule)
+      if (currentRules.some(r => r.pattern === newPattern && r.pattern !== pattern)) {
+        showNotification('A rule for this pattern already exists', 'warning');
+        return;
+      }
+      
+      const saveBtn = editForm.querySelector('.save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        await sendMessage({
+          action: 'updateRule',
+          oldPattern: pattern,
+          newPattern: newPattern,
+          groupId: newGroupId,
+          type: newType
+        });
+        
+        hideAllEditForms();
+        await updateStatus();
+        showNotification('Rule updated successfully', 'success', 2000);
+      } catch (error) {
+        console.error('Error updating rule:', error);
+        showNotification('Failed to update rule', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+    
+    // Focus on pattern input
+    patternInput.focus();
+  }
+
+  function hideAllEditForms() {
+    document.querySelectorAll('.edit-form').forEach(form => {
+      form.remove();
     });
   }
 

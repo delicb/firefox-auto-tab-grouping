@@ -228,10 +228,105 @@
       border-radius: 3px;
       cursor: pointer;
       font-size: 11px;
+      margin-left: 4px;
     }
     
     .remove-btn:hover {
       background: #c82333;
+    }
+    
+    .edit-btn {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .edit-btn:hover {
+      background: #5a6268;
+    }
+    
+    .item-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .edit-form {
+      padding: 8px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    
+    .edit-form .form-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .edit-form .form-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .edit-form input,
+    .edit-form select {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    .edit-form .color-select-mini {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .edit-form .color-option-mini {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    
+    .edit-form .color-option-mini.selected {
+      border-color: #333;
+    }
+    
+    .edit-form-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    
+    .edit-form-actions button {
+      padding: 4px 12px;
+      font-size: 11px;
+      margin: 0;
+    }
+    
+    .save-btn {
+      background: #28a745;
+      color: white;
+    }
+    
+    .save-btn:hover {
+      background: #218838;
+    }
+    
+    .cancel-btn {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .cancel-btn:hover {
+      background: #5a6268;
     }
     
     .empty-state {

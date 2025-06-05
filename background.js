@@ -497,6 +497,43 @@ async function removePatternRule(pattern) {
   }
 }
 
+async function updatePatternRule(oldPattern, newPattern, groupId, type = 'simple') {
+  // Verify the group exists
+  if (!groupDefinitions.has(groupId)) {
+    throw new Error('Group definition not found');
+  }
+  
+  // Validate regex pattern if type is regex
+  if (type === 'regex') {
+    try {
+      new RegExp(newPattern);
+    } catch (error) {
+      throw new Error('Invalid regex pattern: ' + error.message);
+    }
+  }
+  
+  // Remove old rule
+  patternRules.delete(oldPattern);
+  
+  // Add new rule
+  patternRules.set(newPattern, { groupId, type });
+  
+  await saveConfig();
+  
+  if (isEnabled) {
+    // Ungroup tabs that matched the old pattern but don't match the new one
+    const tabs = await browser.tabs.query({});
+    for (const tab of tabs) {
+      if (matchesPattern(tab.url, oldPattern) && !matchesPattern(tab.url, newPattern, type) && tab.groupId !== -1) {
+        await browser.tabs.ungroup([tab.id]);
+      }
+    }
+    
+    // Regroup all tabs to apply new rules
+    await groupExistingTabs();
+  }
+}
+
 function getPatternRules() {
   return Array.from(patternRules.entries()).map(([pattern, ruleData]) => {
     const groupDef = groupDefinitions.get(ruleData.groupId);
@@ -681,6 +718,20 @@ function handleMessage(message, sender, sendResponse) {
         sendResponse({ success: true });
       }).catch(error => {
         console.error('Error removing rule:', error);
+        sendResponse({ error: error.message });
+      });
+      return true;
+
+    case 'updateRule':
+      updatePatternRule(
+        message.oldPattern,
+        message.newPattern,
+        message.groupId,
+        message.type || 'simple'
+      ).then(() => {
+        sendResponse({ success: true });
+      }).catch(error => {
+        console.error('Error updating rule:', error);
         sendResponse({ error: error.message });
       });
       return true;

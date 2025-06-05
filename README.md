@@ -60,9 +60,16 @@ To install this extension permanently:
    - Tabs from unconfigured patterns will be ungrouped
    - Pinned tabs are ignored by default (can be changed in settings)
 7. **Manage Configuration**: 
-   - Remove groups or rules using the "Remove" buttons
+   - **Edit groups**: Click "Edit" next to any group to modify its name or color in-place
+   - **Edit rules**: Click "Edit" next to any rule to modify its pattern, type, or group assignment
+   - **Remove groups or rules**: Use the "Remove" buttons (editing makes deletion less necessary)
    - Use control buttons to regroup all tabs, ungroup all tabs, or toggle auto-grouping
-8. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
+8. **In-Place Editing**: 
+   - **Group editing**: Change group names and colors without losing existing rules
+   - **Rule editing**: Modify patterns, switch between Simple/Regex types, or reassign to different groups
+   - **Validation**: All edits are validated before saving to prevent errors
+   - **No data loss**: Editing preserves all existing configurations and relationships
+9. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
 
 ### Pattern Types
 
@@ -101,6 +108,28 @@ The extension supports 8 predefined colors for tab groups:
 - **Purple** (`purple`) - For entertainment or social sites
 - **Cyan** (`cyan`) - For development or technical sites
 - **Orange** (`orange`) - For work or business sites
+
+## In-Place Editing Features
+
+### Group Editing
+- **Modify group names**: Click "Edit" next to any group to change its name
+- **Change colors**: Select from the 8 available colors using the visual color picker
+- **Instant validation**: Duplicate names are prevented with real-time feedback
+- **Live updates**: Changes are immediately reflected in the browser tab groups
+
+### Rule Editing
+- **Pattern modification**: Edit URL patterns without recreating the rule
+- **Type switching**: Convert between Simple and Regex pattern types seamlessly
+- **Group reassignment**: Move rules to different groups with the dropdown selector
+- **Pattern validation**: Regex patterns are validated before saving
+- **Duplicate prevention**: The system prevents conflicting patterns
+
+### Editing Workflow
+1. Click the "Edit" button next to any group or rule
+2. Modify the values in the inline form that appears
+3. Use "Save" to commit changes or "Cancel" to discard
+4. All edits are validated and saved immediately
+5. Browser tab groups update automatically to reflect changes
 
 ## Tab Groups in Firefox
 
@@ -190,6 +219,13 @@ This extension uses the following Firefox WebExtensions APIs:
 - `storage.local` - For persisting user configurations
 - `runtime` - For message passing between scripts
 
+## Version History
+
+- **v4.0** - Added in-place editing for groups and rules, improved user experience
+- **v3.0** - Added regular expression pattern support for advanced URL matching  
+- **v2.0** - Added pinned tabs toggle functionality
+- **v1.0** - Initial release with basic tab grouping
+
 ## Troubleshooting
 
 ### Common Issues
@@ -202,7 +238,15 @@ This extension uses the following Firefox WebExtensions APIs:
 **Tabs not grouping automatically:**
 - Check that auto-grouping is enabled (green indicator in popup)
 - Verify hostname configuration matches exactly (no www. prefix needed)
+- Use the edit feature to modify patterns if needed
+- Test with simple patterns before using regex
 - Reload the extension in `about:debugging` if issues persist
+
+**Editing features not working:**
+- Ensure you click "Save" after making changes
+- Check for validation errors (duplicate names, invalid regex)
+- Use "Cancel" to discard unwanted changes
+- Reload extension if edit forms become unresponsive
 
 **Groups not showing custom names/colors:**
 - Ensure configurations are saved (check the configurations list in popup)
