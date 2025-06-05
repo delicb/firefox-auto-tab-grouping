@@ -126,10 +126,20 @@ The extension supports 8 predefined colors for tab groups:
 
 ### Editing Workflow
 1. Click the "Edit" button next to any group or rule
-2. Modify the values in the inline form that appears
-3. Use "Save" to commit changes or "Cancel" to discard
-4. All edits are validated and saved immediately
-5. Browser tab groups update automatically to reflect changes
+2. A full-width modal dialog opens with improved spacing and layout
+3. Modify the values in the professional edit form:
+   - **Groups**: Change name using the text input, select colors from the large grid
+   - **Rules**: Switch pattern types, edit patterns with helpful placeholders, reassign groups
+4. Click outside the modal or use "Cancel" to discard changes
+5. Use "Save" to commit changes - all edits are validated before saving
+6. The modal closes automatically and browser tab groups update to reflect changes
+
+**Modal Features:**
+- **Full-width design**: Spacious editing interface with proper form layout
+- **Background dimming**: Clear focus on the edit dialog with overlay
+- **Large color picker**: Easy-to-click color options with visual feedback
+- **Smart validation**: Real-time pattern validation and duplicate prevention
+- **Keyboard support**: Tab navigation and Enter/Escape shortcuts
 
 ## Tab Groups in Firefox
 
@@ -221,6 +231,7 @@ This extension uses the following Firefox WebExtensions APIs:
 
 ## Version History
 
+- **v5.0** - Enhanced edit dialog UI with full-width modal popup and improved user experience
 - **v4.0** - Added in-place editing for groups and rules, improved user experience
 - **v3.0** - Added regular expression pattern support for advanced URL matching  
 - **v2.0** - Added pinned tabs toggle functionality

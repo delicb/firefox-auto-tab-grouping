@@ -501,37 +501,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const group = currentGroups.find(g => g.groupId === groupId);
     if (!group) return;
     
-    const groupItem = groupsList.querySelector(`[data-group-id="${groupId}"]`);
-    if (!groupItem) return;
-    
     // Hide existing edit forms
     hideAllEditForms();
     
-    // Create edit form
-    const editForm = document.createElement('div');
-    editForm.className = 'edit-form';
-    editForm.innerHTML = `
-      <div class="form-row">
-        <input type="text" class="edit-group-name" value="${escapeHtml(group.name)}" placeholder="Group name">
+    // Set modal title
+    document.getElementById('modalTitle').textContent = 'Edit Group';
+    
+    // Create modal content
+    const modalContent = document.getElementById('modalContent');
+    modalContent.innerHTML = `
+      <div class="form-group">
+        <label for="editGroupName">Group Name:</label>
+        <input type="text" id="editGroupName" value="${escapeHtml(group.name)}" placeholder="Group name">
       </div>
-      <div class="form-row">
-        <div class="color-select-mini">
+      <div class="form-group">
+        <label>Color:</label>
+        <div class="color-select-grid">
           ${['blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'].map(color => `
-            <div class="color-option-mini color-${color} ${group.color === color ? 'selected' : ''}" data-color="${color}"></div>
+            <div class="color-option-large color-${color} ${group.color === color ? 'selected' : ''}" data-color="${color}"></div>
           `).join('')}
         </div>
       </div>
-      <div class="edit-form-actions">
-        <button class="cancel-btn">Cancel</button>
-        <button class="save-btn">Save</button>
-      </div>
     `;
     
-    groupItem.appendChild(editForm);
-    
-    // Color selection logic for edit form
+    // Color selection logic
     let editSelectedColor = group.color;
-    const colorOptions = editForm.querySelectorAll('.color-option-mini');
+    const colorOptions = modalContent.querySelectorAll('.color-option-large');
     colorOptions.forEach(option => {
       option.addEventListener('click', () => {
         colorOptions.forEach(opt => opt.classList.remove('selected'));
@@ -540,14 +535,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
     
-    // Cancel button
-    editForm.querySelector('.cancel-btn').addEventListener('click', () => {
-      hideAllEditForms();
-    });
+    // Show modal
+    document.getElementById('editModal').style.display = 'flex';
     
-    // Save button
-    editForm.querySelector('.save-btn').addEventListener('click', async () => {
-      const nameInput = editForm.querySelector('.edit-group-name');
+    // Cancel button handler
+    document.getElementById('modalCancel').onclick = () => {
+      hideModal();
+    };
+    
+    // Save button handler
+    document.getElementById('modalSave').onclick = async () => {
+      const nameInput = document.getElementById('editGroupName');
       const newName = nameInput.value.trim();
       
       if (!newName) {
@@ -561,7 +559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      const saveBtn = editForm.querySelector('.save-btn');
+      const saveBtn = document.getElementById('modalSave');
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
       
@@ -573,7 +571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           color: editSelectedColor
         });
         
-        hideAllEditForms();
+        hideModal();
         await updateStatus();
         showNotification('Group updated successfully', 'success', 2000);
       } catch (error) {
@@ -582,35 +580,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save';
       }
-    });
+    };
     
     // Focus on name input
-    editForm.querySelector('.edit-group-name').focus();
+    setTimeout(() => {
+      document.getElementById('editGroupName').focus();
+    }, 100);
   }
 
   function showRuleEditForm(pattern) {
     const rule = currentRules.find(r => r.pattern === pattern);
     if (!rule) return;
     
-    const ruleItem = rulesList.querySelector(`[data-pattern="${pattern}"]`);
-    if (!ruleItem) return;
-    
     // Hide existing edit forms
     hideAllEditForms();
     
-    // Create edit form
-    const editForm = document.createElement('div');
-    editForm.className = 'edit-form';
-    editForm.innerHTML = `
+    // Set modal title
+    document.getElementById('modalTitle').textContent = 'Edit Rule';
+    
+    // Create modal content
+    const modalContent = document.getElementById('modalContent');
+    modalContent.innerHTML = `
       <div class="form-row">
-        <select class="edit-pattern-type">
-          <option value="simple" ${rule.type === 'simple' ? 'selected' : ''}>Simple</option>
-          <option value="regex" ${rule.type === 'regex' ? 'selected' : ''}>Regex</option>
-        </select>
-        <input type="text" class="edit-pattern" value="${escapeHtml(rule.pattern)}" placeholder="Pattern">
+        <div class="form-group">
+          <label for="editPatternType">Pattern Type:</label>
+          <select id="editPatternType">
+            <option value="simple" ${rule.type === 'simple' ? 'selected' : ''}>Simple</option>
+            <option value="regex" ${rule.type === 'regex' ? 'selected' : ''}>Regex</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editPattern">Pattern:</label>
+          <input type="text" id="editPattern" value="${escapeHtml(rule.pattern)}" placeholder="Pattern">
+          <div id="editPatternHelp" class="help-text"></div>
+        </div>
       </div>
-      <div class="form-row">
-        <select class="edit-group-select">
+      <div class="form-group">
+        <label for="editGroupSelect">Assign to Group:</label>
+        <select id="editGroupSelect">
           ${currentGroups.map(group => `
             <option value="${escapeHtml(group.groupId)}" ${group.groupId === rule.groupId ? 'selected' : ''}>
               ${escapeHtml(group.name)}
@@ -618,39 +625,39 @@ document.addEventListener('DOMContentLoaded', async () => {
           `).join('')}
         </select>
       </div>
-      <div class="edit-form-actions">
-        <button class="cancel-btn">Cancel</button>
-        <button class="save-btn">Save</button>
-      </div>
     `;
     
-    ruleItem.appendChild(editForm);
-    
     // Pattern type change handler
-    const patternTypeSelect = editForm.querySelector('.edit-pattern-type');
-    const patternInput = editForm.querySelector('.edit-pattern');
+    const patternTypeSelect = document.getElementById('editPatternType');
+    const patternInput = document.getElementById('editPattern');
+    const patternHelp = document.getElementById('editPatternHelp');
     
     const updatePatternPlaceholder = () => {
       if (patternTypeSelect.value === 'regex') {
         patternInput.placeholder = '.*\\.github\\.com.*|.*stackoverflow.*';
+        patternHelp.textContent = 'Regular expressions for advanced pattern matching. Examples: ".*\\.github\\.com.*", "^https://.*stackoverflow.*"';
       } else {
         patternInput.placeholder = 'example.com or example.com/path';
+        patternHelp.textContent = 'Simple patterns match domains and paths. Examples: "github.com", "github.com/microsoft"';
       }
     };
     
     patternTypeSelect.addEventListener('change', updatePatternPlaceholder);
     updatePatternPlaceholder();
     
-    // Cancel button
-    editForm.querySelector('.cancel-btn').addEventListener('click', () => {
-      hideAllEditForms();
-    });
+    // Show modal
+    document.getElementById('editModal').style.display = 'flex';
     
-    // Save button
-    editForm.querySelector('.save-btn').addEventListener('click', async () => {
+    // Cancel button handler
+    document.getElementById('modalCancel').onclick = () => {
+      hideModal();
+    };
+    
+    // Save button handler
+    document.getElementById('modalSave').onclick = async () => {
       const newPattern = patternInput.value.trim();
       const newType = patternTypeSelect.value;
-      const newGroupId = editForm.querySelector('.edit-group-select').value;
+      const newGroupId = document.getElementById('editGroupSelect').value;
       
       if (!newPattern || !newGroupId) {
         showNotification('Please enter a pattern and select a group', 'warning');
@@ -673,7 +680,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      const saveBtn = editForm.querySelector('.save-btn');
+      const saveBtn = document.getElementById('modalSave');
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
       
@@ -686,7 +693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           type: newType
         });
         
-        hideAllEditForms();
+        hideModal();
         await updateStatus();
         showNotification('Rule updated successfully', 'success', 2000);
       } catch (error) {
@@ -695,16 +702,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save';
       }
-    });
+    };
     
     // Focus on pattern input
-    patternInput.focus();
+    setTimeout(() => {
+      patternInput.focus();
+    }, 100);
   }
 
   function hideAllEditForms() {
+    // Remove any inline edit forms (for backward compatibility)
     document.querySelectorAll('.edit-form').forEach(form => {
       form.remove();
     });
+    
+    // Hide modal
+    hideModal();
+  }
+
+  function hideModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) {
+      modal.style.display = 'none';
+      
+      // Reset modal state
+      const saveBtn = document.getElementById('modalSave');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+      
+      // Clear modal content
+      document.getElementById('modalContent').innerHTML = '';
+    }
   }
 
   function isValidPattern(pattern, type = 'simple') {
@@ -752,4 +782,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   }
+
+  // Modal overlay click handler to close modal when clicking outside
+  document.getElementById('editModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('edit-modal-overlay')) {
+      hideModal();
+    }
+  });
+
+  // Keyboard support for modal (Escape key to close)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('editModal');
+      if (modal && modal.style.display === 'flex') {
+        hideModal();
+      }
+    }
+  });
+
+  // Initialize
+  await updateStatus();
 });

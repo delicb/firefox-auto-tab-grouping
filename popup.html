@@ -254,79 +254,186 @@
       gap: 4px;
     }
     
-    .edit-form {
-      padding: 8px;
-      background: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 4px;
-      margin-top: 8px;
-    }
-    
-    .edit-form .form-row {
+    /* Edit Modal Styles */
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 3000;
       display: flex;
-      gap: 8px;
       align-items: center;
-      margin-bottom: 8px;
+      justify-content: center;
+      animation: fadeIn 0.2s ease-out;
     }
     
-    .edit-form .form-row:last-child {
+    .edit-modal {
+      background: white;
+      border-radius: 8px;
+      width: calc(100% - 32px);
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      animation: slideUp 0.2s ease-out;
+    }
+    
+    .edit-modal-header {
+      padding: 20px 20px 0 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .edit-modal-header h3 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .edit-modal-body {
+      padding: 20px;
+    }
+    
+    .edit-modal .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .edit-modal .form-group:last-child {
       margin-bottom: 0;
     }
     
-    .edit-form input,
-    .edit-form select {
+    .edit-modal label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    .edit-modal input,
+    .edit-modal select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    
+    .edit-modal input:focus,
+    .edit-modal select:focus {
+      outline: none;
+      border-color: #0078d4;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+    }
+    
+    .edit-modal .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+    }
+    
+    .edit-modal .form-row .form-group {
       flex: 1;
-      padding: 6px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      font-size: 12px;
+      margin-bottom: 0;
     }
     
-    .edit-form .color-select-mini {
-      display: flex;
-      gap: 4px;
+    .edit-modal .color-select-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 6px;
     }
     
-    .edit-form .color-option-mini {
-      width: 18px;
-      height: 18px;
-      border-radius: 3px;
+    .edit-modal .color-option-large {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
       cursor: pointer;
-      border: 2px solid transparent;
+      border: 3px solid transparent;
+      transition: all 0.2s;
+      position: relative;
     }
     
-    .edit-form .color-option-mini.selected {
+    .edit-modal .color-option-large:hover {
+      transform: scale(1.05);
+    }
+    
+    .edit-modal .color-option-large.selected {
       border-color: #333;
+      transform: scale(1.1);
     }
     
-    .edit-form-actions {
+    .edit-modal .color-option-large.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .edit-modal-footer {
+      padding: 0 20px 20px 20px;
       display: flex;
-      gap: 6px;
+      gap: 12px;
       justify-content: flex-end;
+      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 20px;
     }
     
-    .edit-form-actions button {
-      padding: 4px 12px;
-      font-size: 11px;
-      margin: 0;
+    .edit-modal-footer button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 80px;
     }
     
-    .save-btn {
+    .edit-modal .save-btn {
       background: #28a745;
       color: white;
     }
     
-    .save-btn:hover {
+    .edit-modal .save-btn:hover:not(:disabled) {
       background: #218838;
+      transform: translateY(-1px);
     }
     
-    .cancel-btn {
+    .edit-modal .save-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .edit-modal .cancel-btn {
       background: #6c757d;
       color: white;
     }
     
-    .cancel-btn:hover {
+    .edit-modal .cancel-btn:hover {
       background: #5a6268;
+      transform: translateY(-1px);
+    }
+    
+    .edit-modal .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      font-style: italic;
+    }
+    
+    .edit-modal .pattern-type-regex .help-text {
+      color: #0078d4;
     }
     
     .empty-state {
@@ -585,6 +692,22 @@
     <button id="ungroupBtn" class="secondary">Ungroup All</button>
   </div>
   
+  <!-- Edit Modal -->
+  <div id="editModal" class="edit-modal-overlay" style="display: none;">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h3 id="modalTitle">Edit</h3>
+      </div>
+      <div class="edit-modal-body">
+        <div id="modalContent"></div>
+      </div>
+      <div class="edit-modal-footer">
+        <button id="modalCancel" class="cancel-btn">Cancel</button>
+        <button id="modalSave" class="save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
