@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const groupsList = document.getElementById('groupsList');
   
   // Rule management elements
+  const patternTypeSelect = document.getElementById('patternType');
   const patternInput = document.getElementById('pattern');
+  const patternLabel = document.getElementById('patternLabel');
+  const patternHelp = document.getElementById('patternHelp');
   const groupSelect = document.getElementById('groupSelect');
   const addRuleBtn = document.getElementById('addRuleBtn');
   const rulesList = document.getElementById('rulesList');
@@ -169,10 +172,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Pattern type change handler
+  patternTypeSelect.addEventListener('change', () => {
+    const isRegex = patternTypeSelect.value === 'regex';
+    const addConfigDiv = patternTypeSelect.closest('.add-config');
+    
+    if (isRegex) {
+      addConfigDiv.classList.add('pattern-type-regex');
+      patternLabel.textContent = 'Regular Expression Pattern:';
+      patternInput.placeholder = '.*\\.github\\.com.*|.*stackoverflow.*';
+      patternHelp.textContent = 'Use regex patterns for advanced matching. Examples: ".*\\.github\\.com.*", "https://.*\\.reddit\\.com/r/.*"';
+    } else {
+      addConfigDiv.classList.remove('pattern-type-regex');
+      patternLabel.textContent = 'URL Pattern (e.g., github.com or github.com/organization):';
+      patternInput.placeholder = 'example.com or example.com/path';
+      patternHelp.textContent = 'Simple patterns match domains and paths. Examples: "github.com", "github.com/microsoft"';
+    }
+  });
+
   // Add rule
   addRuleBtn.addEventListener('click', async () => {
     const pattern = patternInput.value.trim();
     const groupId = groupSelect.value;
+    const patternType = patternTypeSelect.value;
     
     if (!pattern || !groupId) {
       showNotification('Please enter a URL pattern and select a group', 'warning');
@@ -180,8 +202,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Validate pattern format
-    if (!isValidPattern(pattern)) {
-      showNotification('Please enter a valid URL pattern (e.g., example.com or example.com/path)', 'warning');
+    if (!isValidPattern(pattern, patternType)) {
+      if (patternType === 'regex') {
+        showNotification('Please enter a valid regular expression', 'warning');
+      } else {
+        showNotification('Please enter a valid URL pattern (e.g., example.com or example.com/path)', 'warning');
+      }
       return;
     }
     
@@ -198,12 +224,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       await sendMessage({
         action: 'addRule',
         pattern: pattern,
-        groupId: groupId
+        groupId: groupId,
+        type: patternType
       });
       
       // Clear inputs
       patternInput.value = '';
       groupSelect.value = '';
+      patternTypeSelect.value = 'simple';
+      // Trigger the change event to update UI
+      patternTypeSelect.dispatchEvent(new Event('change'));
       
       // Refresh the display
       await updateStatus();
@@ -409,7 +439,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     rulesList.innerHTML = currentRules.map(rule => `
       <div class="config-item">
         <div class="config-info">
-          <div class="config-pattern">${escapeHtml(rule.pattern)}</div>
+          <div class="config-pattern">
+            ${escapeHtml(rule.pattern)}
+            ${rule.type === 'regex' ? '<span class="pattern-type-indicator regex">REGEX</span>' : '<span class="pattern-type-indicator">SIMPLE</span>'}
+          </div>
           <div class="config-group">
             <div class="config-color color-${rule.groupColor}"></div>
             ${escapeHtml(rule.groupName)}
@@ -442,8 +475,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function isValidPattern(pattern) {
-    // Basic pattern validation - can be hostname or hostname/path
+  function isValidPattern(pattern, type = 'simple') {
+    if (type === 'regex') {
+      // Validate regex pattern
+      try {
+        new RegExp(pattern);
+        return pattern.length > 0 && pattern.length <= 1000; // Reasonable length limit
+      } catch (error) {
+        return false;
+      }
+    }
+    
+    // Simple pattern validation - can be hostname or hostname/path
     // Allow letters, numbers, dots, hyphens, slashes, and underscores
     const patternRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-_]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-_]{0,61}[a-zA-Z0-9])?)*(\/[a-zA-Z0-9\-_\/]*)?$/;
     

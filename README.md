@@ -4,8 +4,10 @@ A Firefox extension that automatically organizes tabs into groups based on URL p
 
 ## Features
 
-- **Automatic Tab Grouping**: Automatically groups tabs by URL patterns (hostname or hostname/path)
-- **Flexible Pattern Matching**: Support for both hostname-only (e.g., `github.com`) and path-based patterns (e.g., `github.com/organization`)
+- **Automatic Tab Grouping**: Automatically groups tabs by URL patterns
+- **Dual Pattern Types**: 
+  - **Simple patterns**: hostname or hostname/path matching (e.g., `github.com`, `github.com/microsoft`)
+  - **Regular expressions**: Advanced pattern matching (e.g., `.*\.google\.com.*`, `.*(docs|documentation).*`)
 - **Pinned Tabs Control**: Option to include or ignore pinned tabs in grouping (default: ignore pinned tabs)
 - **Customizable Group Names**: Configure custom names for each URL pattern group
 - **Color-Coded Groups**: Choose from 8 different colors for visual organization
@@ -15,6 +17,7 @@ A Firefox extension that automatically organizes tabs into groups based on URL p
 - **Bulk Operations**: Regroup all tabs or ungroup all tabs with one click
 - **In-Popup Notifications**: User-friendly notifications for success, warnings, and errors (no blocking alerts)
 - **Confirmation Dialogs**: Safe removal with custom confirmation modals
+- **Pattern Validation**: Real-time validation for both simple and regex patterns
 
 ## Installation
 
@@ -45,7 +48,10 @@ To install this extension permanently:
    - Choose a color from the 8 available options
    - Click "Add Group"
 5. **Configure Rules**:
-   - In the "Pattern Rules" section, enter a URL pattern (e.g., `github.com`, `facebook.com/groups`)
+   - In the "Pattern Rules" section, choose your pattern type:
+     - **Simple**: For basic domain/path matching (e.g., `github.com`, `github.com/microsoft`)
+     - **Regular Expression**: For advanced pattern matching (e.g., `.*\.google\.com.*`, `.*(docs|documentation).*`)
+   - Enter your URL pattern according to the selected type
    - Select which group to assign tabs matching this pattern
    - Click "Add Rule"
 6. **Automatic Grouping**: When you visit a configured pattern:
@@ -57,6 +63,32 @@ To install this extension permanently:
    - Remove groups or rules using the "Remove" buttons
    - Use control buttons to regroup all tabs, ungroup all tabs, or toggle auto-grouping
 8. **Visual Feedback**: The extension provides notifications for all actions (success, warnings, errors)
+
+### Pattern Types
+
+The extension supports two types of URL pattern matching:
+
+#### Simple Patterns
+- **Domain only**: `github.com` - matches all GitHub pages
+- **Domain with path**: `github.com/microsoft` - matches only Microsoft's GitHub pages
+- **Subdomain support**: Enter the full subdomain like `docs.github.com`
+
+Examples:
+- `youtube.com` → matches youtube.com, www.youtube.com
+- `reddit.com/r/programming` → matches only the programming subreddit
+- `stackoverflow.com` → matches all Stack Overflow pages
+
+#### Regular Expression Patterns
+- **Advanced matching**: Use full regex syntax for complex patterns
+- **Multiple domains**: `.*\.(google|gmail)\.com.*` - matches Google and Gmail
+- **Flexible patterns**: `.*(docs|documentation).*` - matches any URL with "docs" or "documentation"
+- **Subdomain wildcards**: `.*\.github\.com.*` - matches all GitHub subdomains
+
+Examples:
+- `.*\.google\.com.*` → matches docs.google.com, drive.google.com, etc.
+- `https://.*\.(gov|edu).*` → matches government and education sites
+- `.*(docs|documentation|manual).*` → matches documentation sites
+- `.*reddit\.com/r/(programming|webdev).*` → matches specific subreddits
 
 ### Available Colors
 

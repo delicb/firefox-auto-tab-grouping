@@ -2,7 +2,7 @@
 
 // Global state management
 let groupDefinitions = new Map(); // groupId -> {name, color}
-let patternRules = new Map(); // pattern -> groupId
+let patternRules = new Map(); // pattern -> {groupId, type} (type: 'simple' or 'regex')
 let activeGroups = new Map(); // groupId -> tabGroupId
 let isEnabled = true;
 let ignorePinnedTabs = true; // Default: don't group pinned tabs
@@ -90,7 +90,21 @@ function extractUrlPattern(url) {
   }
 }
 
-function matchesPattern(url, pattern) {
+function matchesPattern(url, pattern, patternType = 'simple') {
+  if (!url) return false;
+  console.log('Matching URL:', url, 'against pattern:', pattern, 'of type:', patternType);
+  if (patternType === 'regex') {
+    try {
+      // Create regex from pattern string
+      const regex = new RegExp(pattern, 'i'); // Case insensitive
+      return regex.test(url);
+    } catch (error) {
+      console.warn('Invalid regex pattern:', pattern, error);
+      return false;
+    }
+  }
+  
+  // Simple pattern matching (existing logic)
   const urlPattern = extractUrlPattern(url);
   if (!urlPattern) return false;
   
@@ -113,7 +127,22 @@ async function loadConfig() {
     }
     
     if (result.patternRules) {
-      patternRules = new Map(Object.entries(result.patternRules));
+      const rulesEntries = Object.entries(result.patternRules);
+      patternRules = new Map();
+      
+      // Handle both old format (pattern -> groupId) and new format (pattern -> {groupId, type})
+      for (const [pattern, value] of rulesEntries) {
+        if (typeof value === 'string') {
+          // Old format: pattern -> groupId
+          patternRules.set(pattern, { groupId: value, type: 'simple' });
+        } else if (value && typeof value === 'object') {
+          // New format: pattern -> {groupId, type}
+          patternRules.set(pattern, {
+            groupId: value.groupId,
+            type: value.type || 'simple'
+          });
+        }
+      }
     }
     
     if (result.isEnabled !== undefined) {
@@ -209,10 +238,10 @@ async function handleTabChange(tab) {
   let groupId = null;
   
   // Check all patterns to find a match
-  for (const [pattern, ruleGroupId] of patternRules.entries()) {
-    if (matchesPattern(tab.url, pattern)) {
+  for (const [pattern, ruleData] of patternRules.entries()) {
+    if (matchesPattern(tab.url, pattern, ruleData.type)) {
       matchingPattern = pattern;
-      groupId = ruleGroupId;
+      groupId = ruleData.groupId;
       break;
     }
   }
@@ -360,8 +389,8 @@ async function addGroupDefinition(groupId, name, color) {
 async function removeGroupDefinition(groupId) {
   // First remove any pattern rules that reference this group
   const rulesToRemove = [];
-  for (const [pattern, ruleGroupId] of patternRules.entries()) {
-    if (ruleGroupId === groupId) {
+  for (const [pattern, ruleData] of patternRules.entries()) {
+    if (ruleData.groupId === groupId) {
       rulesToRemove.push(pattern);
     }
   }
@@ -429,13 +458,22 @@ function getGroupDefinitions() {
 
 // PATTERN RULE MANAGEMENT
 
-async function addPatternRule(pattern, groupId) {
+async function addPatternRule(pattern, groupId, type = 'simple') {
   // Verify the group exists
   if (!groupDefinitions.has(groupId)) {
     throw new Error('Group definition not found');
   }
   
-  patternRules.set(pattern, groupId);
+  // Validate regex pattern if type is regex
+  if (type === 'regex') {
+    try {
+      new RegExp(pattern);
+    } catch (error) {
+      throw new Error('Invalid regex pattern: ' + error.message);
+    }
+  }
+  
+  patternRules.set(pattern, { groupId, type });
   await saveConfig();
   
   if (isEnabled) {
@@ -444,14 +482,15 @@ async function addPatternRule(pattern, groupId) {
 }
 
 async function removePatternRule(pattern) {
+  const ruleData = patternRules.get(pattern);
   patternRules.delete(pattern);
   await saveConfig();
   
-  if (isEnabled) {
+  if (isEnabled && ruleData) {
     // Ungroup tabs that no longer have a rule
     const tabs = await browser.tabs.query({});
     for (const tab of tabs) {
-      if (matchesPattern(tab.url, pattern) && tab.groupId !== -1) {
+      if (matchesPattern(tab.url, pattern, ruleData.type) && tab.groupId !== -1) {
         await browser.tabs.ungroup([tab.id]);
       }
     }
@@ -459,11 +498,12 @@ async function removePatternRule(pattern) {
 }
 
 function getPatternRules() {
-  return Array.from(patternRules.entries()).map(([pattern, groupId]) => {
-    const groupDef = groupDefinitions.get(groupId);
+  return Array.from(patternRules.entries()).map(([pattern, ruleData]) => {
+    const groupDef = groupDefinitions.get(ruleData.groupId);
     return {
       pattern,
-      groupId,
+      groupId: ruleData.groupId,
+      type: ruleData.type || 'simple',
       groupName: groupDef ? groupDef.name : 'Unknown Group',
       groupColor: groupDef ? groupDef.color : 'grey'
     };
@@ -626,7 +666,8 @@ function handleMessage(message, sender, sendResponse) {
     case 'addRule':
       addPatternRule(
         message.pattern,
-        message.groupId
+        message.groupId,
+        message.type || 'simple'
       ).then(() => {
         sendResponse({ success: true });
       }).catch(error => {
