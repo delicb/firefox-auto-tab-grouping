@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pinnedTabsText = document.getElementById('pinnedTabsText');
   const pinnedTabsToggleBtn = document.getElementById('pinnedTabsToggleBtn');
   
+  // Tab placement toggle elements
+  const tabPlacementIndicator = document.getElementById('tabPlacementIndicator');
+  const tabPlacementText = document.getElementById('tabPlacementText');
+  const tabPlacementToggleBtn = document.getElementById('tabPlacementToggleBtn');
+  
   // Group management elements
   const groupNameInput = document.getElementById('groupName');
   const addGroupBtn = document.getElementById('addGroupBtn');
@@ -288,6 +293,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     pinnedTabsToggleBtn.disabled = false;
   });
 
+  // Tab placement toggle functionality
+  tabPlacementToggleBtn.addEventListener('click', async () => {
+    tabPlacementToggleBtn.disabled = true;
+    try {
+      // Get current status to determine current placement
+      const currentStatus = await sendMessage({ action: 'getStatus' });
+      const newPlacement = currentStatus.tabPlacement === 'last' ? 'first' : 'last';
+      
+      const response = await sendMessage({ 
+        action: 'setTabPlacement', 
+        placement: newPlacement 
+      });
+      
+      await updateStatus();
+      showNotification(
+        `New tabs will be placed at the ${response.tabPlacement} position in groups`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error changing tab placement:', error);
+      showNotification('Failed to update tab placement setting', 'error');
+    }
+    tabPlacementToggleBtn.disabled = false;
+  });
+
   // Regroup all tabs
   regroupBtn.addEventListener('click', async () => {
     regroupBtn.disabled = true;
@@ -337,6 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const response = await sendMessage({ action: 'getStatus' });
       const isEnabled = response.enabled;
       const ignorePinnedTabs = response.ignorePinnedTabs;
+      const tabPlacement = response.tabPlacement || 'last';
       currentGroups = response.groups || [];
       currentRules = response.rules || [];
       
@@ -348,6 +379,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       pinnedTabsIndicator.className = `status-indicator ${ignorePinnedTabs ? 'enabled' : 'disabled'}`;
       pinnedTabsText.textContent = ignorePinnedTabs ? 'Ignoring pinned tabs' : 'Grouping pinned tabs';
       pinnedTabsToggleBtn.textContent = ignorePinnedTabs ? 'Include Pinned' : 'Ignore Pinned';
+      
+      // Update tab placement status
+      tabPlacementIndicator.className = 'status-indicator enabled';
+      tabPlacementText.textContent = `Tab placement: ${tabPlacement === 'first' ? 'First tab' : 'Last tab'}`;
+      tabPlacementToggleBtn.textContent = tabPlacement === 'first' ? 'Place Last' : 'Place First';
       
       updateGroupSelect();
       renderGroupsList();

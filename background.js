@@ -6,6 +6,7 @@ let patternRules = new Map(); // pattern -> {groupId, type} (type: 'simple' or '
 let activeGroups = new Map(); // groupId -> tabGroupId
 let isEnabled = true;
 let ignorePinnedTabs = true; // Default: don't group pinned tabs
+let tabPlacement = 'last'; // Default: place new tabs at the end of the group ('first' or 'last')
 let initialized = false;
 
 // TOP-LEVEL EVENT LISTENERS (Required by Firefox)
@@ -120,7 +121,7 @@ function matchesPattern(url, pattern, patternType = 'simple') {
 
 async function loadConfig() {
   try {
-    const result = await browser.storage.local.get(['groupDefinitions', 'patternRules', 'isEnabled', 'ignorePinnedTabs']);
+    const result = await browser.storage.local.get(['groupDefinitions', 'patternRules', 'isEnabled', 'ignorePinnedTabs', 'tabPlacement']);
     
     if (result.groupDefinitions) {
       groupDefinitions = new Map(Object.entries(result.groupDefinitions));
@@ -153,11 +154,16 @@ async function loadConfig() {
       ignorePinnedTabs = result.ignorePinnedTabs;
     }
     
+    if (result.tabPlacement !== undefined) {
+      tabPlacement = result.tabPlacement;
+    }
+    
     console.log('Configuration loaded:', { 
       groupCount: groupDefinitions.size, 
       ruleCount: patternRules.size, 
       isEnabled,
-      ignorePinnedTabs
+      ignorePinnedTabs,
+      tabPlacement
     });
   } catch (error) {
     console.error('Error loading config:', error);
@@ -173,7 +179,8 @@ async function saveConfig() {
       groupDefinitions: groupDefinitionsObj,
       patternRules: patternRulesObj,
       isEnabled: isEnabled,
-      ignorePinnedTabs: ignorePinnedTabs
+      ignorePinnedTabs: ignorePinnedTabs,
+      tabPlacement: tabPlacement
     });
     console.log('Configuration saved');
   } catch (error) {
@@ -324,11 +331,39 @@ async function handleTabChange(tab) {
         tabIds: [tab.id],
         groupId: targetTabGroupId
       });
+      
+      // Position the tab within the group based on tabPlacement setting
+      await positionTabInGroup(tab.id, targetTabGroupId);
+      
       console.log(`Moved tab to existing group "${groupDef.name}" for pattern: ${matchingPattern}`);
     }
 
   } catch (error) {
     console.error('Error grouping tab:', error);
+  }
+}
+
+async function positionTabInGroup(tabId, groupId) {
+  try {
+    if (tabPlacement === 'first') {
+      // Get all tabs in the group
+      const groupTabs = await browser.tabs.query({ groupId: groupId });
+      
+      if (groupTabs.length > 1) {
+        // Find the current tab and the first tab in the group
+        const currentTab = groupTabs.find(t => t.id === tabId);
+        const firstTab = groupTabs.reduce((min, tab) => tab.index < min.index ? tab : min);
+        
+        if (currentTab && firstTab && currentTab.id !== firstTab.id) {
+          // Move the tab to the position of the first tab
+          await browser.tabs.move(tabId, { index: firstTab.index });
+          console.log(`Moved tab ${tabId} to first position in group ${groupId}`);
+        }
+      }
+    }
+    // For 'last' placement, no action needed as tabs are added at the end by default
+  } catch (error) {
+    console.warn('Error positioning tab in group:', error);
   }
 }
 
@@ -361,6 +396,16 @@ async function toggleIgnorePinnedTabs() {
     await groupExistingTabs();
   }
   return ignorePinnedTabs;
+}
+
+async function setTabPlacement(placement) {
+  if (placement !== 'first' && placement !== 'last') {
+    throw new Error('Invalid tab placement. Must be "first" or "last"');
+  }
+  
+  tabPlacement = placement;
+  await saveConfig();
+  return tabPlacement;
 }
 
 async function ungroupAllTabs() {
@@ -628,6 +673,15 @@ function handleMessage(message, sender, sendResponse) {
         sendResponse({ error: error.message });
       });
       return true; // Keep message channel open for async response
+
+    case 'setTabPlacement':
+      setTabPlacement(message.placement).then(tabPlacement => {
+        sendResponse({ tabPlacement });
+      }).catch(error => {
+        console.error('Error setting tab placement:', error);
+        sendResponse({ error: error.message });
+      });
+      return true; // Keep message channel open for async response
       
     case 'ungroup':
       ungroupAllTabs().then(() => {
@@ -652,6 +706,7 @@ function handleMessage(message, sender, sendResponse) {
         sendResponse({ 
           enabled: isEnabled,
           ignorePinnedTabs: ignorePinnedTabs,
+          tabPlacement: tabPlacement,
           configs: getGroupConfigs(),
           groups: getGroupDefinitions(),
           rules: getPatternRules(),

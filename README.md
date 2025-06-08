@@ -9,6 +9,7 @@ A Firefox extension that automatically organizes tabs into groups based on URL p
   - **Simple patterns**: hostname or hostname/path matching (e.g., `github.com`, `github.com/microsoft`)
   - **Regular expressions**: Advanced pattern matching (e.g., `.*\.google\.com.*`, `.*(docs|documentation).*`)
 - **Pinned Tabs Control**: Option to include or ignore pinned tabs in grouping (default: ignore pinned tabs)
+- **Tab Placement Control**: Choose where new tabs are placed within groups - at the beginning (first tab) or end (last tab) of the group (default: last tab)
 - **Customizable Group Names**: Configure custom names for each URL pattern group
 - **Color-Coded Groups**: Choose from 8 different colors for visual organization
 - **Real-time Organization**: Tabs are grouped instantly when navigating to configured patterns
@@ -43,6 +44,7 @@ To install this extension permanently:
 3. **Configure Settings**:
    - **Auto-grouping toggle**: Enable or disable automatic tab grouping
    - **Pinned tabs toggle**: Choose whether to include pinned tabs in grouping (default: ignore pinned tabs)
+   - **Tab placement toggle**: Choose where new tabs are placed within groups - "First tab" places new tabs at the beginning of the group, "Last tab" places them at the end (default: last tab)
 4. **Configure Groups**: 
    - In the "Groups" section, enter a group name (e.g., "Development", "Social Media")
    - Choose a color from the 8 available options
@@ -229,13 +231,53 @@ This extension uses the following Firefox WebExtensions APIs:
 - `storage.local` - For persisting user configurations
 - `runtime` - For message passing between scripts
 
+## Testing
+
+### Manual Testing
+
+For comprehensive testing of the tab placement feature, see `TESTING_TAB_PLACEMENT.md` for detailed test scenarios.
+
+#### Quick Test Steps:
+1. Load the extension in Firefox Developer Mode
+2. Open multiple tabs from the same domain (e.g., several GitHub pages)
+3. Test tab placement toggle:
+   - Set to "First Tab" - new tabs should appear at the beginning of the group
+   - Set to "Last Tab" - new tabs should appear at the end of the group
+4. Verify setting persists across browser restarts
+
+#### Validation Script:
+Run `validate-extension.js` in Firefox Developer Console for automated validation tests:
+```javascript
+// Copy and paste the contents of validate-extension.js into Firefox Console
+```
+
+### Development Testing
+
+1. Open Firefox Developer Tools (F12)
+2. Monitor the Console tab for any JavaScript errors
+3. Test all popup functionality
+4. Verify tab grouping behavior with various URL patterns
+
+## Packaging
+
+The extension is distributed as `firefox-auto-tab-organizer-v6.0.zip` containing:
+- Core extension files (manifest.json, background.js, popup.html, popup.js)
+- Icon assets in multiple sizes
+- Documentation (README.md, LICENCE)
+
+To create a distributable package:
+```bash
+zip -r firefox-auto-tab-organizer-v6.0.zip . -x "*.git*" "*.DS_Store*" "TESTING_TAB_PLACEMENT.md" "validate-extension.js"
+```
+
 ## Version History
 
-- **v5.0** - Enhanced edit dialog UI with full-width modal popup and improved user experience
-- **v4.0** - Added in-place editing for groups and rules, improved user experience
-- **v3.0** - Added regular expression pattern support for advanced URL matching  
-- **v2.0** - Added pinned tabs toggle functionality
-- **v1.0** - Initial release with basic tab grouping
+- **v6.0** (June 2025): Added tab placement control feature - choose where new tabs are positioned within groups (first or last position)
+- **v5.0**: Added pinned tabs control and enhanced group management
+- **v4.0**: Introduced bulk operations and improved notifications
+- **v3.0**: Added pattern validation and confirmation dialogs
+- **v2.0**: Enhanced with color-coded groups and custom naming
+- **v1.0**: Initial release with basic tab grouping functionality
 
 ## Troubleshooting
 
