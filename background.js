@@ -3,7 +3,7 @@
 // Global state management
 let groupDefinitions = new Map(); // groupId -> {name, color}
 let patternRules = new Map(); // pattern -> {groupId, type} (type: 'simple' or 'regex')
-let activeGroups = new Map(); // groupId -> tabGroupId
+let activeGroups = new Map(); // windowId -> Map(groupId -> tabGroupId)
 let isEnabled = true;
 let ignorePinnedTabs = true; // Default: don't group pinned tabs
 let tabPlacement = 'last'; // Default: place new tabs at the end of the group ('first' or 'last')
@@ -15,8 +15,7 @@ let initialized = false;
 browser.tabs.onCreated.addListener((tab) => {
   if (!initialized) return;
   if (isEnabled) {
-    console.log('Tab created:', tab.url);
-    console.log("active groups:", activeGroups);
+    console.log('Tab created:', tab.url, 'in window:', tab.windowId);
     handleTabChange(tab);
   }
 });
@@ -44,13 +43,32 @@ browser.tabs.onActivated.addListener((activeInfo) => {
 browser.tabGroups.onRemoved.addListener((group) => {
   if (!initialized) return;
   console.log('Group removed:', group.id);
-  for (const [groupId, tabGroupId] of activeGroups.entries()) {
-    if (tabGroupId === group.id) {
-      activeGroups.delete(groupId);
-      console.log('Removed group from tracking:', groupId);
-      break;
+  
+  // Remove group from tracking across all windows
+  for (const [windowId, windowGroups] of activeGroups.entries()) {
+    for (const [groupId, tabGroupId] of windowGroups.entries()) {
+      if (tabGroupId === group.id) {
+        windowGroups.delete(groupId);
+        console.log(`Removed group from window ${windowId} tracking:`, groupId);
+        
+        // Clean up empty window entries
+        if (windowGroups.size === 0) {
+          activeGroups.delete(windowId);
+        }
+        return; // Found and removed, exit
+      }
     }
   }
+});
+
+// Add window event listeners
+browser.windows.onRemoved.addListener((windowId) => {
+  if (!initialized) return;
+  console.log('Window removed:', windowId);
+  
+  // Clean up tracking for this window
+  activeGroups.delete(windowId);
+  console.log('Cleaned up group tracking for window:', windowId);
 });
 
 browser.runtime.onStartup.addListener(() => {
@@ -68,6 +86,25 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // UTILITY FUNCTIONS
+
+function getWindowGroups(windowId) {
+  if (!activeGroups.has(windowId)) {
+    activeGroups.set(windowId, new Map());
+  }
+  return activeGroups.get(windowId);
+}
+
+function debugLogActiveGroups() {
+  console.log('=== Active Groups Debug ===');
+  for (const [windowId, windowGroups] of activeGroups.entries()) {
+    console.log(`Window ${windowId}:`);
+    for (const [groupId, tabGroupId] of windowGroups.entries()) {
+      const groupDef = groupDefinitions.get(groupId);
+      console.log(`  - Group "${groupDef ? groupDef.name : 'Unknown'}" (${groupId}) -> TabGroup ${tabGroupId}`);
+    }
+  }
+  console.log('=== End Debug ===');
+}
 
 function extractHostname(url) {
   try {
@@ -198,30 +235,53 @@ async function scanExistingGroups() {
     // Clear our current group tracking
     activeGroups.clear();
     
-    // Check each existing group against our group definitions
+    // Group the tab groups by window
+    const groupsByWindow = new Map();
     for (const group of existingGroups) {
-      // Look for a group definition that matches this group's title
-      for (const [groupId, groupDef] of groupDefinitions.entries()) {
-        if (groupDef.name === group.title) {
-          // Found a matching group, track it
-          activeGroups.set(groupId, group.id);
-          console.log(`Found existing group "${group.title}" (ID: ${group.id}) for groupId: ${groupId}`);
-          
-          // Optionally update the group's color to match our configuration
-          try {
-            await browser.tabGroups.update(group.id, {
-              color: groupDef.color
-            });
-          } catch (error) {
-            console.warn(`Could not update color for group "${group.title}":`, error);
+      // Get tabs in this group to determine the window
+      const groupTabs = await browser.tabs.query({ groupId: group.id });
+      if (groupTabs.length > 0) {
+        const windowId = groupTabs[0].windowId;
+        if (!groupsByWindow.has(windowId)) {
+          groupsByWindow.set(windowId, []);
+        }
+        groupsByWindow.get(windowId).push(group);
+      }
+    }
+    
+    // Check each existing group against our group definitions
+    for (const [windowId, windowGroups] of groupsByWindow.entries()) {
+      const windowGroupMap = getWindowGroups(windowId);
+      
+      for (const group of windowGroups) {
+        // Look for a group definition that matches this group's title
+        for (const [groupId, groupDef] of groupDefinitions.entries()) {
+          if (groupDef.name === group.title) {
+            // Found a matching group, track it for this window
+            windowGroupMap.set(groupId, group.id);
+            console.log(`Found existing group "${group.title}" (ID: ${group.id}) in window ${windowId} for groupId: ${groupId}`);
+            
+            // Optionally update the group's color to match our configuration
+            try {
+              await browser.tabGroups.update(group.id, {
+                color: groupDef.color
+              });
+            } catch (error) {
+              console.warn(`Could not update color for group "${group.title}":`, error);
+            }
+            
+            break; // Found a match, move to next group
           }
-          
-          break; // Found a match, move to next group
         }
       }
     }
     
-    console.log(`Tracking ${activeGroups.size} existing groups`);
+    let totalGroups = 0;
+    for (const windowGroups of activeGroups.values()) {
+      totalGroups += windowGroups.size;
+    }
+    console.log(`Tracking ${totalGroups} existing groups across ${activeGroups.size} windows`);
+    debugLogActiveGroups();
   } catch (error) {
     console.error('Error scanning existing groups:', error);
   }
@@ -281,20 +341,23 @@ async function handleTabChange(tab) {
       }
     }
 
-    // Find or create group for this definition
-    let targetTabGroupId = activeGroups.get(groupId);
+    // Get window-specific groups
+    const windowGroups = getWindowGroups(tab.windowId);
+    
+    // Find or create group for this definition in this specific window
+    let targetTabGroupId = windowGroups.get(groupId);
     
     if (!targetTabGroupId) {
-      // Check if a group with this name exists but we're not tracking it
+      // Check if a group with this name exists in this window but we're not tracking it
       try {
-        const existingGroups = await browser.tabGroups.query({});
+        const existingGroups = await browser.tabGroups.query({ windowId: tab.windowId });
         const matchingGroup = existingGroups.find(group => group.title === groupDef.name);
         
         if (matchingGroup) {
-          // Found existing group, start tracking it
+          // Found existing group in this window, start tracking it
           targetTabGroupId = matchingGroup.id;
-          activeGroups.set(groupId, targetTabGroupId);
-          console.log(`Found and started tracking existing group "${groupDef.name}" (ID: ${targetTabGroupId})`);
+          windowGroups.set(groupId, targetTabGroupId);
+          console.log(`Found and started tracking existing group "${groupDef.name}" (ID: ${targetTabGroupId}) in window ${tab.windowId}`);
           
           // Update color to match our definition
           try {
@@ -323,10 +386,11 @@ async function handleTabChange(tab) {
         color: groupDef.color
       });
       
-      activeGroups.set(groupId, targetTabGroupId);
-      console.log(`Created new group "${groupDef.name}" (ID: ${targetTabGroupId}) for pattern: ${matchingPattern}`);
+      windowGroups.set(groupId, targetTabGroupId);
+      console.log(`Created new group "${groupDef.name}" (ID: ${targetTabGroupId}) in window ${tab.windowId} for pattern: ${matchingPattern}`);
+      debugLogActiveGroups();
     } else {
-      // Move tab to the existing group
+      // Move tab to the existing group in the same window
       await browser.tabs.group({
         tabIds: [tab.id],
         groupId: targetTabGroupId
@@ -335,7 +399,7 @@ async function handleTabChange(tab) {
       // Position the tab within the group based on tabPlacement setting
       await positionTabInGroup(tab.id, targetTabGroupId);
       
-      console.log(`Moved tab to existing group "${groupDef.name}" for pattern: ${matchingPattern}`);
+      console.log(`Moved tab to existing group "${groupDef.name}" in window ${tab.windowId} for pattern: ${matchingPattern}`);
     }
 
   } catch (error) {
@@ -417,7 +481,7 @@ async function ungroupAllTabs() {
       await browser.tabs.ungroup(groupedTabs.map(tab => tab.id));
     }
     
-    // Clear our group tracking
+    // Clear our group tracking for all windows
     activeGroups.clear();
   } catch (error) {
     console.error('Error ungrouping tabs:', error);
@@ -444,22 +508,31 @@ async function removeGroupDefinition(groupId) {
     patternRules.delete(pattern);
   }
   
+  // Get the group name before removing it
+  const groupDef = groupDefinitions.get(groupId);
+  const groupName = groupDef ? groupDef.name : null;
+  
   // Remove the group definition
   groupDefinitions.delete(groupId);
   
-  // Remove from active groups if present
-  activeGroups.delete(groupId);
+  // Remove from active groups across all windows
+  for (const [windowId, windowGroups] of activeGroups.entries()) {
+    windowGroups.delete(groupId);
+    if (windowGroups.size === 0) {
+      activeGroups.delete(windowId);
+    }
+  }
   
   await saveConfig();
   
-  if (isEnabled) {
+  if (isEnabled && groupName) {
     // Ungroup tabs that were using this group
     const tabs = await browser.tabs.query({});
     for (const tab of tabs) {
       if (tab.groupId !== -1) {
         try {
           const group = await browser.tabGroups.get(tab.groupId);
-          if (group.title === name) {
+          if (group.title === groupName) {
             await browser.tabs.ungroup([tab.id]);
           }
         } catch (error) {
@@ -479,16 +552,18 @@ async function updateGroupDefinition(groupId, name, color) {
   groupDefinitions.set(groupId, { name, color });
   await saveConfig();
   
-  // Update any active browser tab groups
-  const tabGroupId = activeGroups.get(groupId);
-  if (tabGroupId) {
-    try {
-      await browser.tabGroups.update(tabGroupId, {
-        title: name,
-        color: color
-      });
-    } catch (error) {
-      console.warn('Could not update browser tab group:', error);
+  // Update any active browser tab groups across all windows
+  for (const [windowId, windowGroups] of activeGroups.entries()) {
+    const tabGroupId = windowGroups.get(groupId);
+    if (tabGroupId) {
+      try {
+        await browser.tabGroups.update(tabGroupId, {
+          title: name,
+          color: color
+        });
+      } catch (error) {
+        console.warn(`Could not update browser tab group in window ${windowId}:`, error);
+      }
     }
   }
 }
